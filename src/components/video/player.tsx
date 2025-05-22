@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { PlayIcon, PauseIcon } from '@heroicons/react/24/solid';
-import { ipfsToHttps } from '@/services/ipfs';
+import { irysToHttps } from '@/services/irys';
 
 interface VideoPlayerProps {
   src: string;
@@ -69,7 +69,7 @@ export function VideoPlayer({ src, title }: VideoPlayerProps) {
     <div className="relative bg-black rounded-lg overflow-hidden">
       <video
         ref={videoRef}
-        src={ipfsToHttps(src)}
+        src={irysToHttps(src)}
         className="w-full aspect-video"
         title={title}
       />

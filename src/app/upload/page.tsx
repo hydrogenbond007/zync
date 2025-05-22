@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CloudArrowUpIcon } from '@heroicons/react/24/outline';
 import { useAccount } from 'wagmi';
-import { uploadToIPFS, uploadMetadataToIPFS } from '@/services/ipfs';
+import { uploadToIrys, uploadMetadataToIrys } from '@/services/irys';
 import { useVideoToken } from '@/hooks/useVideoToken';
 
 export default function UploadPage() {
@@ -27,8 +27,9 @@ export default function UploadPage() {
     setUploadError(null);
 
     try {
-      // Upload video to IPFS
-      const videoURI = await uploadToIPFS(file);
+      // Upload video to Irys
+      const videoId = await uploadToIrys(file);
+      const videoURI = `https://gateway.irys.xyz/${videoId}`;
 
       // Generate token symbol if not provided (first 5 letters of title, uppercased)
       const tokenSymbol = symbol || title.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 5);

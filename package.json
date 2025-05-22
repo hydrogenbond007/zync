@@ -11,16 +11,17 @@
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
+    "@irys/sdk": "^0.2.11",
+    "@irys/upload": "^0.0.15",
+    "@irys/upload-ethereum": "^0.0.16",
     "@openzeppelin/contracts-upgradeable": "^5.3.0",
     "@rainbow-me/rainbowkit": "^2.2.5",
     "@tanstack/react-query": "^5.76.1",
-    "@thirdweb-dev/storage": "^2.0.15",
-    "ipfs-http-client": "^60.0.1",
     "next": "15.3.2",
     "pino-pretty": "^13.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "thirdweb": "^5.100.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tmp-promise": "^3.0.3",
     "viem": "^2.30.0",
     "wagmi": "^2.15.4"
   },
@@ -31,13 +32,16 @@
     "@openzeppelin/hardhat-upgrades": "^3.9.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
     "dotenv": "^16.5.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.2",
     "hardhat": "^2.24.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "@parcel/resolver-default": {
+    "packageExports": true
   }
 }

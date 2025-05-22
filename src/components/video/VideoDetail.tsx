@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAccount } from 'wagmi';
-import { ipfsToHttps } from '@/services/ipfs';
+import { irysToHttps } from '@/services/irys';
 import { useVideoToken } from '@/hooks/useVideoToken';
 
 interface VideoDetailProps {
@@ -30,7 +30,7 @@ export default function VideoDetail({
   const [buyError, setBuyError] = useState<string | null>(null);
   const [buySuccess, setBuySuccess] = useState(false);
 
-  const videoUrl = ipfsToHttps(videoURI);
+  const videoUrl = irysToHttps(videoURI);
   const isCreator = address?.toLowerCase() === creator.toLowerCase();
   const formattedDate = new Date(timestamp).toLocaleDateString();
 

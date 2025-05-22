@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import { formatEther } from 'viem';
-import { ipfsToHttps } from '@/services/ipfs';
+import { irysToHttps } from '@/services/irys';
 
 interface VideoCardProps {
   id: string;
@@ -43,7 +43,7 @@ export function VideoCard({
       <Link href={`/watch/${id}`} className="flex-shrink-0 relative">
         <img
           className="h-48 w-full object-cover"
-          src={ipfsToHttps(thumbnailUri)}
+          src={irysToHttps(thumbnailUri)}
           alt={title}
         />
         {isHovered && (

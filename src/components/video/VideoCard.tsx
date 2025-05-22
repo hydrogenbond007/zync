@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ipfsToHttps } from '@/services/ipfs';
+import { irysToHttps } from '@/services/irys';
 
 interface VideoCardProps {
   id: string;
@@ -26,8 +26,8 @@ export default function VideoCard({
   // Format the date
   const formattedDate = new Date(timestamp).toLocaleDateString();
   
-  // Convert IPFS URL to HTTP URL for display
-  const thumbnailUrl = ipfsToHttps(videoURI);
+  // Convert Irys URL to HTTP URL for display
+  const thumbnailUrl = irysToHttps(videoURI);
   
   return (
     <Link href={`/watch/${id}`} className="group">

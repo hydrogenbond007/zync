@@ -1,5 +1,4 @@
 import { ethers } from 'ethers';
-import { parseEther } from 'viem';
 
 // ABIs
 const ZYNC_FACTORY_ABI = [
@@ -59,8 +58,27 @@ const ZYNC_FACTORY_ADDRESS = '0x1bB1C756286021D5919742adF1CB5476d1584720';
 const VIDEO_NFT_ADDRESS = '0x636956810ba9d46f1Fd23541bE7CD58c4CBcF88F';
 const ROYALTY_VAULT_IMPLEMENTATION_ADDRESS = '0x7759Cf8E659Dc47cEA1d059Ce5115549E5854Bc4';
 
+// Define interfaces for the data types
+interface VideoData {
+  id: string;
+  title: string;
+  description: string;
+  creator: string;
+  timestamp: number;
+  vaultAddress: string;
+  videoURI: string;
+}
+
+interface TokenData {
+  balance: string;
+  dividendsAvailable: string;
+  totalDividends: string;
+  symbol: string;
+  name: string;
+}
+
 // Helper function to format video data from the blockchain
-export function formatVideoData(data: any) {
+export function formatVideoData(data: Record<string, any>): VideoData {
   return {
     id: data.id.toString(),
     title: data.title,
@@ -73,7 +91,7 @@ export function formatVideoData(data: any) {
 }
 
 // Helper function to format token data
-export function formatTokenData(data: any) {
+export function formatTokenData(data: Record<string, any>): TokenData {
   return {
     balance: ethers.formatUnits(data.balance || '0', 18),
     dividendsAvailable: ethers.formatUnits(data.dividendsAvailable || '0', 18),

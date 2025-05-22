@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation';
 import { useAccount, useReadContract } from 'wagmi';
 import VideoDetail from '@/components/video/VideoDetail';
 import { VIDEO_NFT_ABI, VIDEO_NFT_ADDRESS } from '@/services/web3';
-import { ipfsToHttps } from '@/services/ipfs';
 
 interface VideoData {
   id: string;
