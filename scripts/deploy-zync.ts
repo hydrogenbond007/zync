@@ -3,18 +3,12 @@ import { ethers } from "hardhat";
 async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("Deploying contracts with the account:", deployer.address);
-  
-  // First, deploy a simple ERC20 token to use as the platform token for royalties
-  // In a real deployment, you might want to use an existing token
-  const ERC20 = await ethers.getContractFactory("ERC20"); // Replace with your actual ERC20 contract
-  const platformToken = await ERC20.deploy("Zync Platform Token", "ZYNC");
-  await platformToken.waitForDeployment();
-  
-  console.log("Platform Token deployed to:", await platformToken.getAddress());
+  console.log("Account balance:", (await ethers.provider.getBalance(deployer.address)).toString());
   
   // Deploy the ZyncFactory
+  console.log("Deploying ZyncFactory...");
   const ZyncFactory = await ethers.getContractFactory("ZyncFactory");
-  const zyncFactory = await ZyncFactory.deploy(await platformToken.getAddress());
+  const zyncFactory = await ZyncFactory.deploy();
   await zyncFactory.waitForDeployment();
   
   console.log("ZyncFactory deployed to:", await zyncFactory.getAddress());
@@ -25,8 +19,8 @@ async function main() {
   
   console.log("Default token price set to:", ethers.formatEther(await zyncFactory.defaultTokenPrice()), "ETH");
   
-  // If you want to register a test video, uncomment the following:
-  /*
+  // Register a test video
+  console.log("Registering test video...");
   const tx = await zyncFactory.registerVideo(
     "ipfs://test-video-uri",
     "Test Video Title",
@@ -36,7 +30,6 @@ async function main() {
   );
   await tx.wait();
   console.log("Test video registered");
-  */
 }
 
 main()

@@ -5,14 +5,12 @@ import "./VideoNFT.sol";
 import "./RoyaltyVault.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ZyncFactory is Ownable {
     using Clones for address;
     
     VideoNFT public videoNFT;
     address public royaltyVaultImplementation;
-    address public platformToken; // ERC20 token for royalty distribution
     
     // Default token price in ETH 
     uint256 public defaultTokenPrice = 0.0001 ether; // Can be updated by owner
@@ -26,10 +24,9 @@ contract ZyncFactory is Ownable {
         string tokenSymbol
     );
     
-    constructor(address _platformToken) Ownable(msg.sender) {
+    constructor() Ownable(msg.sender) {
         videoNFT = new VideoNFT();
         royaltyVaultImplementation = address(new RoyaltyVault());
-        platformToken = _platformToken;
     }
     
     /**
@@ -62,10 +59,9 @@ contract ZyncFactory is Ownable {
         );
         
         // Initialize the RoyaltyVault
-        RoyaltyVault(vaultAddress).initialize(
+        RoyaltyVault(payable(vaultAddress)).initialize(
             tokenName,
             tokenSymbol,
-            platformToken,
             msg.sender,
             tokenId,
             videoURI
@@ -89,7 +85,7 @@ contract ZyncFactory is Ownable {
      * @param amount Amount of tokens to buy
      */
     function buyVideoTokens(address vaultAddress, uint256 amount) external payable {
-        RoyaltyVault(vaultAddress).buyTokens(amount, defaultTokenPrice);
+        RoyaltyVault(payable(vaultAddress)).buyTokens{value: msg.value}(amount, defaultTokenPrice);
     }
     
     /**

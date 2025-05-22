@@ -1,0 +1,10 @@
+{
+  "transactions": [
+    {
+      "rpc": "https://rpc.basecamp.t.raas.gelato.cloud"
+    },
+    {
+      "rpc": "https://rpc.basecamp.t.raas.gelato.cloud"
+    }
+  ]
+}

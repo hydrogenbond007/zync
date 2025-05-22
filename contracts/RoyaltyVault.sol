@@ -2,8 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -11,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 error NotInitialized();
 error NoShares();
 error NoDividends();
+error TransferFailed();
 
 /// @custom:security This contract is cloneable; call initialize() exactly once.
 contract RoyaltyVault is
@@ -19,11 +18,8 @@ contract RoyaltyVault is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable
 {
-    using SafeERC20 for IERC20;
-
     uint256 private constant MAGNITUDE = 2 ** 128;
 
-    IERC20 public dividendToken;
     uint256 private magnifiedDividendPerShare;
     uint256 public totalDividendsDistributed;
     mapping(address => int256) private magnifiedDividendCorrections;
@@ -36,23 +32,26 @@ contract RoyaltyVault is
     event RoyaltiesRecorded(uint256 amount);
     event DividendsClaimed(address indexed holder, uint256 amount);
 
+    // Make contract able to receive ETH
+    receive() external payable {
+        recordRoyalties(msg.value);
+    }
+
     /// @notice Initialize vault clone. Mints 1 billion tokens to `owner_`.
     function initialize(
         string calldata name_,
         string calldata symbol_,
-        address dividendToken_,
         address owner_,
         uint256 videoNftId_,
         string calldata videoUri_
     ) external initializer {
-        if (dividendToken_ == address(0) || owner_ == address(0))
+        if (owner_ == address(0))
             revert NotInitialized();
 
         __ERC20_init(name_, symbol_);
         __Ownable_init(owner_);
         __ReentrancyGuard_init();
 
-        dividendToken = IERC20(dividendToken_);
         videoNftId = videoNftId_;
         videoUri = videoUri_;
         
@@ -65,9 +64,15 @@ contract RoyaltyVault is
         _mint(address(this), publicShare);
     }
 
-    /// @notice Record `amount` of dividends (must already be in vault).
-    function recordRoyalties(uint256 amount) external onlyOwner {
+    /// @notice Record `amount` of royalties.
+    function recordRoyalties(uint256 amount) public payable {
         if (totalSupply() == 0) revert NoShares();
+        
+        // For direct calls, ensure msg.value matches amount
+        if (msg.sender != address(this) && msg.value != amount) {
+            amount = msg.value;
+        }
+        
         magnifiedDividendPerShare += (amount * MAGNITUDE) / totalSupply();
         totalDividendsDistributed += amount;
         emit RoyaltiesRecorded(amount);
@@ -77,8 +82,12 @@ contract RoyaltyVault is
     function claimDividends() external nonReentrant {
         uint256 owed = withdrawableDividendOf(msg.sender);
         if (owed == 0) revert NoDividends();
+        
         withdrawnDividends[msg.sender] += owed;
-        dividendToken.safeTransfer(msg.sender, owed);
+        
+        (bool success, ) = msg.sender.call{value: owed}("");
+        if (!success) revert TransferFailed();
+        
         emit DividendsClaimed(msg.sender, owed);
     }
     

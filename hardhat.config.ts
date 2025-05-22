@@ -17,8 +17,8 @@ const config: HardhatUserConfig = {
   },
   networks: {
     camp: {
-      url: process.env.CAMP_NETWORK_RPC_URL || "https://rpc.camp.network",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      url: process.env.CAMP_NETWORK_RPC_URL || "https://rpc.basecamp.t.raas.gelato.cloud",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : ["8e8771332a21e7cc344bfb0bd0ee0146b46520c5dc326951a04eda0ce5702dfc"],
     },
     hardhat: {
       chainId: 31337,

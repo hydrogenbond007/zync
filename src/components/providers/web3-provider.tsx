@@ -16,7 +16,7 @@ const config = getDefaultConfig({
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'YOUR_PROJECT_ID',
   chains: [campNetwork],
   transports: {
-    [campNetwork.id]: http('http://127.0.0.1:8545'), // Ensure this is the URL of your Anvil node
+    [campNetwork.id]: http('https://rpc.basecamp.t.raas.gelato.cloud'),
   },
 });
 

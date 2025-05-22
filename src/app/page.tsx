@@ -52,7 +52,7 @@ export default function Home() {
         <div className="mt-12 grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {/* Placeholder for featured content */}
         </div>
-      </div>
-    </main>
+        </div>
+      </main>
   );
 }

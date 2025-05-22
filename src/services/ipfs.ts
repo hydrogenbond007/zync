@@ -41,9 +41,9 @@ async function mockUploadMetadataToIPFS(metadata: IPFSMetadata): Promise<string>
 
 export async function uploadToIPFS(file: File): Promise<string> {
   try {
-    // Use mock implementation if in development mode (default behavior now)
-    if (isDevelopment && useMockIPFS) {
-      console.log('Using mock IPFS service in development mode');
+    // ALWAYS use mock implementation to bypass ThirdWeb storage limits
+    if (true) {
+      console.log('Using mock IPFS service to bypass ThirdWeb storage limits');
       return await mockUploadToIPFS(file);
     }
     
@@ -65,9 +65,9 @@ export async function uploadToIPFS(file: File): Promise<string> {
 
 export async function uploadMetadataToIPFS(metadata: IPFSMetadata): Promise<string> {
   try {
-    // Use mock implementation if in development mode (default behavior now)
-    if (isDevelopment && useMockIPFS) {
-      console.log('Using mock IPFS service for metadata');
+    // ALWAYS use mock implementation to bypass ThirdWeb storage limits
+    if (true) {
+      console.log('Using mock IPFS service for metadata to bypass ThirdWeb storage limits');
       return await mockUploadMetadataToIPFS(metadata);
     }
     

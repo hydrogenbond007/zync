@@ -11,7 +11,6 @@ const ZYNC_FACTORY_ABI = [
   "function getAllVideos() external view returns (uint256[] memory)",
   "function videoNFT() external view returns (address)",
   "function royaltyVaultImplementation() external view returns (address)",
-  "function platformToken() external view returns (address)",
   "function defaultTokenPrice() external view returns (uint256)",
   
   // Write functions
@@ -43,23 +42,22 @@ const ROYALTY_VAULT_ABI = [
   // View functions
   "function videoNftId() external view returns (uint256)",
   "function videoUri() external view returns (string memory)",
-  "function dividendToken() external view returns (address)",
   "function totalDividendsDistributed() external view returns (uint256)",
   "function withdrawableDividendOf(address acct) external view returns (uint256)",
   "function accumulativeDividendOf(address acct) external view returns (uint256)",
   "function balanceOf(address account) external view returns (uint256)",
   
   // Write functions
-  "function recordRoyalties(uint256 amount) external",
+  "function recordRoyalties(uint256 amount) external payable",
   "function claimDividends() external",
   "function buyTokens(uint256 amount, uint256 pricePerToken) external payable",
   "function transfer(address to, uint256 amount) external returns (bool)"
 ];
 
-// Contract addresses
-const ZYNC_FACTORY_ADDRESS = '0xde2Bd2ffEA002b8E84ADeA96e5976aF664115E2c';
-const VIDEO_NFT_ADDRESS = '0xD778E110C66d2E3A8A92cE9D64924DB2b8B24C60';
-const PLATFORM_TOKEN_ADDRESS = '0x986aaa537b8cc170761FDAC6aC4fc7F9d8a20A8C';
+// Contract addresses - Camp testnet deployment
+const ZYNC_FACTORY_ADDRESS = '0x1bB1C756286021D5919742adF1CB5476d1584720';
+const VIDEO_NFT_ADDRESS = '0x636956810ba9d46f1Fd23541bE7CD58c4CBcF88F';
+const ROYALTY_VAULT_IMPLEMENTATION_ADDRESS = '0x7759Cf8E659Dc47cEA1d059Ce5115549E5854Bc4';
 
 // Helper function to format video data from the blockchain
 export function formatVideoData(data: any) {
@@ -91,5 +89,5 @@ export {
   ROYALTY_VAULT_ABI,
   ZYNC_FACTORY_ADDRESS,
   VIDEO_NFT_ADDRESS,
-  PLATFORM_TOKEN_ADDRESS
+  ROYALTY_VAULT_IMPLEMENTATION_ADDRESS
 }; 

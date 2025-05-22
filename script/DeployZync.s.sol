@@ -3,36 +3,25 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
 import "../contracts/ZyncFactory.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
-contract PlatformToken is ERC20 {
-    constructor() ERC20("Zync Platform Token", "ZYNC") {
-        _mint(msg.sender, 1_000_000_000 * 10**decimals());
-    }
-}
 
 contract DeployZync is Script {
     function run() external {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address deployerAddress = vm.addr(deployerPrivateKey);
+        // Use the hardcoded private key from the user query
+        uint256 deployerPrivateKey = 0x8e8771332a21e7cc344bfb0bd0ee0146b46520c5dc326951a04eda0ce5702dfc;
         
         vm.startBroadcast(deployerPrivateKey);
         
-        // 1. Deploy the platform token
-        PlatformToken platformToken = new PlatformToken();
-        console.log("Platform Token deployed at:", address(platformToken));
-        
-        // 2. Deploy the ZyncFactory
-        ZyncFactory factory = new ZyncFactory(address(platformToken));
+        // Deploy the ZyncFactory
+        ZyncFactory factory = new ZyncFactory();
         console.log("ZyncFactory deployed at:", address(factory));
         
-        // 3. Log addresses for main components
+        // Log addresses for main components
         address videoNFT = address(factory.videoNFT());
         address royaltyVaultImpl = factory.royaltyVaultImplementation();
         console.log("VideoNFT deployed at:", videoNFT);
         console.log("RoyaltyVault implementation deployed at:", royaltyVaultImpl);
         
-        // 4. Register a test video
+        // Register a test video
         string memory videoURI = "ipfs://QmTestVideoHash";
         string memory videoTitle = "Test Video";
         string memory videoDescription = "This is a test video for Zync platform";
