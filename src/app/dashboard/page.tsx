@@ -1,296 +1,178 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Tab } from '@headlessui/react';
-import { useAccount, useReadContract } from 'wagmi';
-import { ethers } from 'ethers';
+import { FilmIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import { useCreatorIpAssets, useAllIpAssets, useHasAccess } from '@/hooks/useIpAsset';
+import { useOriginAuth } from '@/components/providers/origin-provider';
 import VideoCard from '@/components/video/VideoCard';
-import { 
-  ZYNC_FACTORY_ADDRESS, 
-  ZYNC_FACTORY_ABI,
-  VIDEO_NFT_ADDRESS,
-  VIDEO_NFT_ABI,
-  ROYALTY_VAULT_ABI
-} from '@/services/web3';
+import { IIpAsset } from '@/types';
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
 }
 
-interface Video {
-  id: string;
-  title: string;
-  description: string;
-  creator: string;
-  timestamp: number;
-  videoURI: string;
-  vaultAddress: string;
-}
+// A new component to render the list of subscribed assets
+const SubscribedAsset = ({ asset }: { asset: IIpAsset }) => {
+    // NOTE: This is inefficient as it makes a separate call for each asset.
+    // In a real app, this data would ideally be fetched in a single batch
+    // from a subgraph or a specialized hook.
+    const { hasAccess } = useHasAccess(asset.id);
 
-interface Investment {
-  id: string;
-  title: string;
-  description: string;
-  creator: string;
-  vaultAddress: string;
-  tokensOwned: string;
-  totalDividends: string;
-  availableDividends: string;
-}
+    // For now, we just show a placeholder if they have access.
+    // A full implementation would fetch asset details here.
+    if (!hasAccess) return null;
+
+    return (
+        <div className="bg-white p-4 rounded-lg shadow flex items-center justify-between">
+            <div>
+                <p className="text-sm font-medium text-gray-900">{asset.title}</p>
+                <p className="text-xs text-gray-500">Token ID: {asset.id.toString()}</p>
+            </div>
+            <Link 
+                href={`/watch/${asset.id}`}
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+            >
+                Watch
+            </Link>
+        </div>
+    );
+};
+
 
 export default function DashboardPage() {
-  const { address } = useAccount();
-  const [selectedTab, setSelectedTab] = useState(0);
-  const [myVideos, setMyVideos] = useState<Video[]>([]);
-  const [myInvestments, setMyInvestments] = useState<Investment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { address } = useOriginAuth();
+  // Using the new hooks to fetch data.
+  // NOTE: These hooks currently return mock/empty data.
+  // A full implementation requires a subgraph.
+  const { assets: createdAssets, isLoading: isLoadingCreations, error: creationsError } = useCreatorIpAssets(address || undefined);
+  const { assets: allAssets, isLoading: isLoadingAll, error: allAssetsError } = useAllIpAssets();
 
-  // Get creator's videos
-  const { data: creatorVideoIds } = useReadContract({
-    address: ZYNC_FACTORY_ADDRESS as `0x${string}`,
-    abi: ZYNC_FACTORY_ABI,
-    functionName: 'getCreatorVideos',
-    args: address ? [address] : undefined,
-  });
+  const isLoading = isLoadingCreations || isLoadingAll;
+  const error = creationsError || allAssetsError;
 
-  // Load video data
-  useEffect(() => {
-    const loadVideos = async () => {
-      if (!address || !creatorVideoIds || !Array.isArray(creatorVideoIds)) {
-        setIsLoading(false);
-        return;
-      }
+  const tabs = [
+    { name: 'My Creations', icon: FilmIcon },
+    { name: 'My Subscriptions', icon: CheckBadgeIcon },
+  ];
 
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // Mock data for demonstration - would be replaced with actual contract calls
-        const videos: Video[] = [];
-        
-        for (const id of creatorVideoIds) {
-          videos.push({
-            id: id.toString(),
-            title: `Video ${id}`,
-            description: 'This is a description of the video content.',
-            creator: address,
-            timestamp: Date.now() - Math.floor(Math.random() * 10000000),
-            videoURI: `ipfs://QmVideoHash${id}`,
-            vaultAddress: `0x${Array(40).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('')}`
-          });
-        }
-        
-        setMyVideos(videos);
-        
-        // Also get investment data (videos where user owns tokens but is not the creator)
-        await loadInvestments();
-      } catch (err) {
-        console.error('Error loading videos:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load videos');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadVideos();
-  }, [address, creatorVideoIds]);
-
-  // Load user's investments
-  const loadInvestments = async () => {
-    if (!address) return;
-    
-    try {
-      // Mock data - would be replaced with actual blockchain queries
-      const investments: Investment[] = [
-        {
-          id: '0',
-          title: 'Web3 Tutorial',
-          description: 'Learn about Web3 concepts.',
-          creator: '0x1234567890123456789012345678901234567890',
-          vaultAddress: '0x2345678901234567890123456789012345678901',
-          tokensOwned: ethers.formatUnits('5000000000000000000000', 18), // 5000 tokens
-          totalDividends: ethers.formatUnits('100000000000000000', 18), // 0.1 ETH
-          availableDividends: ethers.formatUnits('50000000000000000', 18), // 0.05 ETH
-        },
-        {
-          id: '1',
-          title: 'Blockchain Development',
-          description: 'Building on blockchain platforms.',
-          creator: '0x3456789012345678901234567890123456789012',
-          vaultAddress: '0x4567890123456789012345678901234567890123',
-          tokensOwned: ethers.formatUnits('10000000000000000000000', 18), // 10000 tokens
-          totalDividends: ethers.formatUnits('200000000000000000', 18), // 0.2 ETH
-          availableDividends: ethers.formatUnits('100000000000000000', 18), // 0.1 ETH
-        }
-      ];
-      
-      setMyInvestments(investments);
-    } catch (err) {
-      console.error('Error loading investments:', err);
-    }
-  };
-
-  // Handle claiming dividends
-  const handleClaimDividends = async (vaultAddress: string) => {
-    try {
-      console.log(`Claiming dividends from ${vaultAddress}`);
-      // TODO: Implement actual dividend claim from RoyaltyVault
-      
-      // Refresh investments after claiming
-      await loadInvestments();
-    } catch (err) {
-      console.error('Failed to claim dividends:', err);
-    }
-  };
-
-  if (!address) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Connect Wallet</h2>
-          <p className="mt-2 text-gray-600">
-            Please connect your wallet to view your dashboard
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // This is not the final implementation, just a placeholder to show the concept.
+  // The correct way would be to have a dedicated hook like `useMySubscriptions`.
+  // For now, we are just preparing the UI. The list will appear empty because of the hook logic.
+  const subscribedAssets = allAssets;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="mx-auto max-w-4xl">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            Dashboard
-          </h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Manage your content and investments
-          </p>
-
-          <div className="mt-8">
-            <Tab.Group selectedIndex={selectedTab} onChange={setSelectedTab}>
-              <Tab.List className="flex space-x-1 rounded-xl bg-indigo-900/20 p-1">
-                <Tab
-                  className={({ selected }) =>
-                    classNames(
-                      'w-full rounded-lg py-2.5 text-sm font-medium leading-5',
-                      'ring-white ring-opacity-60 ring-offset-2 ring-offset-indigo-400 focus:outline-none focus:ring-2',
-                      selected
-                        ? 'bg-white text-indigo-700 shadow'
-                        : 'text-indigo-100 hover:bg-white/[0.12] hover:text-white'
-                    )
-                  }
-                >
-                  My Content
-                </Tab>
-                <Tab
-                  className={({ selected }) =>
-                    classNames(
-                      'w-full rounded-lg py-2.5 text-sm font-medium leading-5',
-                      'ring-white ring-opacity-60 ring-offset-2 ring-offset-indigo-400 focus:outline-none focus:ring-2',
-                      selected
-                        ? 'bg-white text-indigo-700 shadow'
-                        : 'text-indigo-100 hover:bg-white/[0.12] hover:text-white'
-                    )
-                  }
-                >
-                  My Investments
-                </Tab>
-              </Tab.List>
-              <Tab.Panels className="mt-4">
-                <Tab.Panel>
-                  {isLoading ? (
-                    <div className="text-center py-8">
-                      <p>Loading your videos...</p>
-                    </div>
-                  ) : myVideos.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">You haven&apos;t uploaded any videos yet.</p>
-                      <Link href="/upload" className="mt-4 inline-block text-indigo-600 hover:text-indigo-500">
-                        Upload a video
-                      </Link>
-                    </div>
-                  ) : (
-                    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
-                      {myVideos.map((video) => (
-                        <VideoCard
-                          key={video.id}
-                          id={video.id}
-                          title={video.title}
-                          description={video.description}
-                          creator={video.creator}
-                          timestamp={video.timestamp}
-                          videoURI={video.videoURI}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </Tab.Panel>
-                <Tab.Panel>
-                  {isLoading ? (
-                    <div className="text-center py-8">
-                      <p>Loading your investments...</p>
-                    </div>
-                  ) : myInvestments.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">You haven&apos;t invested in any videos yet.</p>
-                      <Link href="/explore" className="mt-4 inline-block text-indigo-600 hover:text-indigo-500">
-                        Explore videos to invest
-                      </Link>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {myInvestments.map((investment) => (
-                        <div
-                          key={investment.id}
-                          className="bg-white shadow rounded-lg p-6"
-                        >
-                          <h3 className="text-lg font-medium text-gray-900">
-                            <Link href={`/watch/${investment.id}`} className="hover:text-indigo-600">
-                              {investment.title}
-                            </Link>
-                          </h3>
-                          <p className="mt-1 text-sm text-gray-500">
-                            Creator: {investment.creator.slice(0, 6)}...{investment.creator.slice(-4)}
-                          </p>
-                          <div className="mt-4 grid grid-cols-3 gap-4 text-sm text-gray-500">
-                            <div>
-                              <span className="block font-medium text-gray-900">
-                                {investment.tokensOwned}
-                              </span>
-                              Tokens Owned
-                            </div>
-                            <div>
-                              <span className="block font-medium text-gray-900">
-                                {investment.totalDividends} ETH
-                              </span>
-                              Total Earnings
-                            </div>
-                            <div>
-                              <span className="block font-medium text-gray-900">
-                                {investment.availableDividends} ETH
-                              </span>
-                              Available to Claim
-                            </div>
-                          </div>
-                          {Number(investment.availableDividends) > 0 && (
-                            <button
-                              onClick={() => handleClaimDividends(investment.vaultAddress)}
-                              className="mt-4 w-full inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                            >
-                              Claim Dividends
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </Tab.Panel>
-              </Tab.Panels>
-            </Tab.Group>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Dashboard</h1>
+            <p className="mt-2 text-sm text-gray-600">
+              Manage your created content and view your active subscriptions.
+            </p>
           </div>
+
+          <Tab.Group>
+            <Tab.List className="flex space-x-1 rounded-xl bg-gray-900/5 p-1">
+              {tabs.map((tab) => (
+                <Tab
+                  key={tab.name}
+                  className={({ selected }) =>
+                    classNames(
+                      'w-full rounded-lg py-2.5 text-sm font-medium leading-5',
+                      'ring-white ring-opacity-60 ring-offset-2 ring-offset-indigo-400 focus:outline-none focus:ring-2',
+                      selected
+                        ? 'bg-white text-indigo-700 shadow'
+                        : 'text-gray-700 hover:bg-white/[0.12] hover:text-indigo-600'
+                    )
+                  }
+                >
+                   <div className="flex items-center justify-center space-x-2">
+                    <tab.icon className="h-5 w-5" />
+                    <span>{tab.name}</span>
+                  </div>
+                </Tab>
+              ))}
+            </Tab.List>
+            <Tab.Panels className="mt-2">
+              <Tab.Panel
+                className={classNames(
+                  'rounded-xl bg-white p-3',
+                  'ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2'
+                )}
+              >
+                 {isLoading && <p>Loading creations...</p>}
+                 {error && <p className="text-red-500">{error}</p>}
+                 {!isLoading && !error && (
+                    <>
+                        {createdAssets.length === 0 ? (
+                            <div className="text-center py-12">
+                                <FilmIcon className="mx-auto h-12 w-12 text-gray-400" />
+                                <h3 className="mt-2 text-sm font-semibold text-gray-900">No content created</h3>
+                                <p className="mt-1 text-sm text-gray-500">You have not created any content yet.</p>
+                                <div className="mt-6">
+                                <Link
+                                    href="/upload"
+                                    className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                                >
+                                    Create Content
+                                </Link>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                                {createdAssets.map((asset: IIpAsset) => (
+                                    <VideoCard
+                                        key={asset.id}
+                                        {...asset}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </>
+                 )}
+              </Tab.Panel>
+              <Tab.Panel
+                className={classNames(
+                  'rounded-xl bg-white p-3',
+                  'ring-white ring-opacity-60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2'
+                )}
+              >
+                 {isLoading && <p>Loading subscriptions...</p>}
+                 {error && <p className="text-red-500">{error}</p>}
+                 {!isLoading && !error && (
+                    <>
+                        {subscribedAssets.length === 0 ? (
+                           <div className="text-center py-12">
+                                <CheckBadgeIcon className="mx-auto h-12 w-12 text-gray-400" />
+                                <h3 className="mt-2 text-sm font-semibold text-gray-900">No subscriptions</h3>
+                                <p className="mt-1 text-sm text-gray-500">You have not purchased access to any content yet.</p>
+                                 <div className="mt-6">
+                                <Link
+                                    href="/explore"
+                                    className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                                >
+                                    Explore Content
+                                </Link>
+                                </div>
+                           </div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-4">
+                               {/* 
+                                 This is a simplified representation. A subgraph is the proper solution.
+                                 We are passing all assets to the SubscribedAsset component, which will
+                                 then individually check for access. This is very inefficient but demonstrates the flow.
+                               */}
+                               {subscribedAssets.map((asset: IIpAsset) => (
+                                   <SubscribedAsset key={asset.id} asset={asset} />
+                               ))}
+                            </div>
+                        )}
+                    </>
+                 )}
+              </Tab.Panel>
+            </Tab.Panels>
+          </Tab.Group>
         </div>
       </div>
     </div>

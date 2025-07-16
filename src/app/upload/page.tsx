@@ -3,19 +3,23 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CloudArrowUpIcon } from '@heroicons/react/24/outline';
-import { useAccount } from 'wagmi';
-import { uploadToIrys, uploadMetadataToIrys } from '@/services/irys';
-import { useVideoToken } from '@/hooks/useVideoToken';
+import { useOriginAuth } from '@/components/providers/origin-provider';
+import { useMintIpAsset } from '@/hooks/useIpAsset'; 
+import { showError, showLoading, dismissToast, showSuccess } from '@/components/ui/ToastProvider';
+import { LicenseTerms } from '@/types';
 
 export default function UploadPage() {
   const router = useRouter();
-  const { address } = useAccount();
-  const { registerVideo, isLoading: isContractLoading, error: contractError } = useVideoToken();
+  const { isConnected, address } = useOriginAuth();
+  const { mintAsset, isLoading: isMinting, error: mintError } = useMintIpAsset();
   
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [symbol, setSymbol] = useState('');
+  const [price, setPrice] = useState('0.01'); // Default price in ETH
+  const [duration, setDuration] = useState('30'); // Default duration in days
+  const [royaltyBps, setRoyaltyBps] = useState('1000'); // Default royalty 10%
+
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -25,37 +29,53 @@ export default function UploadPage() {
 
     setIsUploading(true);
     setUploadError(null);
+    let toastId: string | number = '';
 
     try {
-      // Upload video to Irys
-      const videoId = await uploadToIrys(file);
-      const videoURI = `https://gateway.irys.xyz/${videoId}`;
+      // Prepare license terms in the correct format
+      const licenseTerms: LicenseTerms = {
+        price: BigInt(Math.floor(parseFloat(price) * 1e18)), // Convert ETH to wei
+        duration: parseInt(duration) * 24 * 60 * 60, // Convert days to seconds
+        royaltyBps: parseInt(royaltyBps),
+        paymentToken: '0x0000000000000000000000000000000000000000' // ETH
+      };
 
-      // Generate token symbol if not provided (first 5 letters of title, uppercased)
-      const tokenSymbol = symbol || title.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 5);
-      
-      // Create token name based on title
-      const tokenName = `${title} Token`;
-
-      // Register video and create tokens
-      await registerVideo(
-        videoURI,
+      const metadata = {
         title,
-        description,
-        tokenName,
-        tokenSymbol
+        description
+      };
+
+      toastId = showLoading('Uploading and minting your IP Asset...');
+
+      // Use Origin SDK to upload file and mint in one step
+      const tokenId = await mintAsset(
+        file,
+        metadata,
+        licenseTerms,
+        (percent: number) => {
+          // Update toast with progress if needed
+          if (toastId) dismissToast(toastId);
+          toastId = showLoading(`Uploading... ${Math.round(percent)}%`);
+        }
       );
 
+      if (toastId) dismissToast(toastId);
+      showSuccess(`Successfully minted asset! Token ID: ${tokenId}`);
       router.push('/dashboard');
+      
     } catch (error) {
       console.error('Upload failed:', error);
-      setUploadError(error instanceof Error ? error.message : 'Upload failed');
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+      setUploadError(errorMessage);
+      
+      if (toastId) dismissToast(toastId);
+      showError(errorMessage);
     } finally {
       setIsUploading(false);
     }
   };
 
-  if (!address) {
+  if (!isConnected || !address) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -76,19 +96,20 @@ export default function UploadPage() {
             Upload Video
           </h1>
           <p className="mt-2 text-sm text-gray-600">
-            Share your content with the world and tokenize your IP
+            Create an IP Asset for your content with custom license terms.
           </p>
 
-          {(uploadError || contractError) && (
+          {(uploadError || mintError) && (
             <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-4">
               <p className="text-sm text-red-600">
-                {uploadError || contractError}
+                {uploadError || mintError}
               </p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-8">
             <div className="space-y-6 bg-white px-4 py-5 shadow sm:rounded-lg sm:p-6">
+              {/* Video File Input */}
               <div>
                 <label
                   htmlFor="video"
@@ -126,6 +147,7 @@ export default function UploadPage() {
                 )}
               </div>
 
+              {/* Title and Description */}
               <div>
                 <label
                   htmlFor="title"
@@ -165,39 +187,62 @@ export default function UploadPage() {
                   />
                 </div>
               </div>
-
-              <div>
-                <label
-                  htmlFor="symbol"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Token Symbol (optional)
-                </label>
-                <div className="mt-1">
+              
+              {/* License Terms */}
+              <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-3">
+                <div>
+                  <label htmlFor="price" className="block text-sm font-medium text-gray-700">
+                    Price (ETH)
+                  </label>
                   <input
-                    type="text"
-                    name="symbol"
-                    id="symbol"
-                    value={symbol}
-                    onChange={(e) => setSymbol(e.target.value)}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    placeholder="e.g. VID01 (max 5 characters)"
-                    maxLength={5}
+                    type="number"
+                    name="price"
+                    id="price"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    placeholder="e.g. 0.01"
                   />
                 </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  This will be the symbol for your video's token. If not provided, we'll generate one from your title.
-                </p>
+                <div>
+                  <label htmlFor="duration" className="block text-sm font-medium text-gray-700">
+                    Duration (Days)
+                  </label>
+                  <input
+                    type="number"
+                    name="duration"
+                    id="duration"
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    placeholder="e.g. 30"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="royaltyBps" className="block text-sm font-medium text-gray-700">
+                    Royalty (%)
+                  </label>
+                  <input
+                    type="number"
+                    name="royaltyBps"
+                    id="royaltyBps"
+                    value={parseInt(royaltyBps) / 100}
+                    onChange={(e) => setRoyaltyBps(String(parseFloat(e.target.value) * 100))}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    placeholder="e.g. 10"
+                    max="100"
+                  />
+                </div>
               </div>
             </div>
 
             <div className="flex justify-end">
               <button
                 type="submit"
-                disabled={isUploading || isContractLoading || !file || !title}
+                disabled={isUploading || isMinting || !file || !title}
                 className="ml-3 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isUploading || isContractLoading ? 'Processing...' : 'Upload & Tokenize'}
+                {isUploading || isMinting ? 'Processing...' : 'Upload & Mint Asset'}
               </button>
             </div>
           </form>

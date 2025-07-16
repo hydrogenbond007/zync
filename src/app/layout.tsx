@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Web3Provider } from "@/components/providers/web3-provider";
+import { OriginProvider } from "@/components/providers/origin-provider";
 import { Navbar } from '@/components/layout/navbar';
+import ToastProvider from "@/components/ui/ToastProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,10 +20,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Web3Provider>
-          <Navbar />
-        {children}
-        </Web3Provider>
+        <OriginProvider clientId={process.env.NEXT_PUBLIC_CAMP_CLIENT_ID || 'default-client-id'}>
+          <ToastProvider>
+            <Navbar />
+            {children}
+          </ToastProvider>
+        </OriginProvider>
       </body>
     </html>
   );

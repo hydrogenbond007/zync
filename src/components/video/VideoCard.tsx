@@ -1,43 +1,39 @@
 import Link from 'next/link';
-import { irysToHttps } from '@/services/irys';
+import Image from 'next/image';
+import { IIpAsset } from '@/types';
 
-interface VideoCardProps {
-  id: string;
-  title: string;
-  description: string;
-  creator: string;
-  timestamp: number;
-  videoURI: string;
-}
+export default function VideoCard(asset: IIpAsset) {
+  const {
+    id,
+    title,
+    description,
+    creator,
+    createdAt,
+    tokenURI,
+  } = asset;
 
-export default function VideoCard({
-  id,
-  title,
-  description,
-  creator,
-  timestamp,
-  videoURI,
-}: VideoCardProps) {
   // Truncate description if it's too long
   const truncatedDescription = description.length > 100
     ? description.substring(0, 100) + '...'
     : description;
   
   // Format the date
-  const formattedDate = new Date(timestamp).toLocaleDateString();
+  const formattedDate = new Date(createdAt).toLocaleDateString();
   
-  // Convert Irys URL to HTTP URL for display
-  const thumbnailUrl = irysToHttps(videoURI);
+  // For now, use tokenURI as thumbnail URL (in a real app, you'd parse the metadata)
+  const thumbnailUrl = tokenURI || '/video-placeholder.jpg';
   
   return (
     <Link href={`/watch/${id}`} className="group">
       <div className="bg-white overflow-hidden shadow rounded-lg transition-shadow duration-300 hover:shadow-md">
         <div className="relative pb-[56.25%] bg-gray-200">
           {/* Thumbnail/Video Preview */}
-          <img 
+          <Image 
             src={thumbnailUrl} 
             alt={title}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="object-cover"
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             onError={(e) => {
               // Fallback if the video thumbnail fails to load
               const target = e.target as HTMLImageElement;

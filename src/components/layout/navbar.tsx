@@ -1,10 +1,10 @@
 'use client';
 
-import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Disclosure } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useOriginAuth } from '@/components/providers/origin-provider';
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -12,6 +12,46 @@ const navigation = [
   { name: 'Upload', href: '/upload' },
   { name: 'My Content', href: '/dashboard' },
 ];
+
+function ConnectButton() {
+  const { isConnected, address, isLoading, connect, disconnect } = useOriginAuth();
+
+  if (isLoading) {
+    return (
+      <button
+        disabled
+        className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-gray-400"
+      >
+        Connecting...
+      </button>
+    );
+  }
+
+  if (isConnected && address) {
+    return (
+      <div className="flex items-center space-x-2">
+        <span className="text-gray-300 text-sm">
+          {address.slice(0, 6)}...{address.slice(-4)}
+        </span>
+        <button
+          onClick={disconnect}
+          className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+        >
+          Disconnect
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={connect}
+      className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+    >
+      Connect Wallet
+    </button>
+  );
+}
 
 export function Navbar() {
   const pathname = usePathname();

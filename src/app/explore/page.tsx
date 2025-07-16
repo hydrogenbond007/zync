@@ -1,129 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { useReadContract } from 'wagmi';
 import Link from 'next/link';
-import { 
-  VIDEO_NFT_ADDRESS, 
-  VIDEO_NFT_ABI, 
-  ZYNC_FACTORY_ADDRESS, 
-  ZYNC_FACTORY_ABI 
-} from '@/services/web3';
+import { useAllIpAssets } from '@/hooks/useIpAsset';
 import VideoCard from '@/components/video/VideoCard';
-
-interface Video {
-  id: string;
-  title: string;
-  description: string;
-  creator: string;
-  timestamp: number;
-  videoURI: string;
-  vaultAddress: string;
-}
+import { IIpAsset } from '@/types';
 
 export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Get all video IDs
-  const { data: videoIds } = useReadContract({
-    address: ZYNC_FACTORY_ADDRESS as `0x${string}`,
-    abi: ZYNC_FACTORY_ABI,
-    functionName: 'getAllVideos',
-  });
-
-  // Load video details for each ID
-  useEffect(() => {
-    const loadVideos = async () => {
-      if (!videoIds || !Array.isArray(videoIds) || videoIds.length === 0) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        const videosData: Video[] = [];
-        const fetchPromises = [];
-
-        // Create fetch promises for each video ID
-        for (const id of videoIds) {
-          const fetchVideoDetails = async () => {
-            try {
-              // Fetch video metadata
-              const metadata = await fetchVideoMetadata(id.toString());
-              // Fetch video URI
-              const uri = await fetchVideoURI(id.toString());
-              
-              return {
-                id: id.toString(),
-                ...metadata,
-                videoURI: uri
-              };
-            } catch (err) {
-              console.error(`Error fetching video ${id}:`, err);
-              return null;
-            }
-          };
-          
-          fetchPromises.push(fetchVideoDetails());
-        }
-
-        // Execute all promises in parallel
-        const results = await Promise.all(fetchPromises);
-        
-        // Filter out any failed fetches and add successful ones to our videos array
-        for (const result of results) {
-          if (result) {
-            videosData.push(result);
-          }
-        }
-
-        setVideos(videosData);
-      } catch (err) {
-        console.error('Error loading videos:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load videos');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadVideos();
-  }, [videoIds]);
-
-  // Helper function to fetch video metadata
-  const fetchVideoMetadata = async (id: string) => {
-    // This would normally be a contract call, but we'll mock it for now
-    // TODO: Replace with actual contract call in production
-    const response = await fetch(`/api/videos/${id}`).catch(() => null);
-    
-    // If API call fails, return mock data as fallback
-    if (!response) {
-      return {
-        title: `Video ${id}`,
-        description: 'This is a video description.',
-        creator: '0x1234567890123456789012345678901234567890',
-        timestamp: Date.now(),
-        vaultAddress: '0x0000000000000000000000000000000000000000',
-      };
-    }
-    
-    return await response.json();
-  };
-
-  // Helper function to fetch video URI
-  const fetchVideoURI = async (id: string) => {
-    // This would normally be a contract call, but we'll mock it for now
-    // TODO: Replace with actual contract call in production
-    return `ipfs://QmVideoHash${id}`;
-  };
+  
+  // Use the new hook to get all assets.
+  // NOTE: This currently returns mock/empty data. A subgraph is needed for real data.
+  const { assets: videos, isLoading, error } = useAllIpAssets();
 
   // Filter videos based on search query
-  const filteredVideos = videos.filter(video => 
+  const filteredVideos = videos.filter((video: IIpAsset) => 
     video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     video.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -177,7 +69,7 @@ export default function ExplorePage() {
             <div className="mt-12 text-center">
               <p className="text-gray-600">No videos available yet.</p>
               <Link href="/upload" className="mt-4 inline-block text-indigo-600 hover:text-indigo-500">
-                Upload a video
+                Be the first to create content!
               </Link>
             </div>
           )}
@@ -185,7 +77,7 @@ export default function ExplorePage() {
           {/* Video Grid */}
           {!isLoading && !error && filteredVideos.length > 0 && (
             <div className="mt-12 grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredVideos.map((video) => (
+              {filteredVideos.map((video: IIpAsset) => (
                 <VideoCard
                   key={video.id}
                   id={video.id}

@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { useAccount, useReadContract } from 'wagmi';
+import { useReadContract } from 'wagmi';
 import VideoDetail from '@/components/video/VideoDetail';
-import { VIDEO_NFT_ABI, VIDEO_NFT_ADDRESS } from '@/services/web3';
+import { IP_NFT_ADDRESS, IP_NFT_ABI } from '@/services/web3';
+import { ethers } from 'ethers';
+import { irysToHttps } from '@/services/irys';
 
 interface VideoData {
   id: string;
@@ -13,62 +15,68 @@ interface VideoData {
   creator: string;
   timestamp: number;
   videoURI: string;
-  vaultAddress: string;
+  price: string;
+  duration: number;
 }
 
 export default function WatchPage() {
   const { id } = useParams();
-  const { address } = useAccount();
   const [videoData, setVideoData] = useState<VideoData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get video metadata
-  const { data: videoMetadata, error: videoError } = useReadContract({
-    address: VIDEO_NFT_ADDRESS as `0x${string}`,
-    abi: VIDEO_NFT_ABI,
-    functionName: 'videos',
-    args: id ? [BigInt(id as string)] : undefined,
+  const tokenId = id ? BigInt(id as string) : undefined;
+
+  const { data: terms, error: termsError } = useReadContract({
+    address: IP_NFT_ADDRESS,
+    abi: IP_NFT_ABI,
+    functionName: 'getTerms',
+    args: tokenId ? [tokenId] : undefined,
   });
 
-  // Get video URI
-  const { data: tokenURI } = useReadContract({
-    address: VIDEO_NFT_ADDRESS as `0x${string}`,
-    abi: VIDEO_NFT_ABI,
+  const { data: tokenURI, error: uriError } = useReadContract({
+    address: IP_NFT_ADDRESS,
+    abi: IP_NFT_ABI,
     functionName: 'tokenURI',
-    args: id ? [BigInt(id as string)] : undefined,
+    args: tokenId ? [tokenId] : undefined,
+  });
+  
+  const { data: owner, error: ownerError } = useReadContract({
+    address: IP_NFT_ADDRESS,
+    abi: IP_NFT_ABI,
+    functionName: 'ownerOf',
+    args: tokenId ? [tokenId] : undefined,
   });
 
   useEffect(() => {
     const loadData = async () => {
-      if (!id) return;
+      if (!id || !terms || !tokenURI || !owner) return;
       
       try {
         setIsLoading(true);
         setError(null);
         
-        if (videoError || !videoMetadata) {
-          throw new Error('Could not load video data');
+        if (termsError || uriError || ownerError) {
+            throw new Error('Could not load video data from the contract.');
         }
+
+        // The metadata (title, description) is now off-chain in the JSON file pointed to by tokenURI.
+        // We need to fetch it.
+        const metadataResponse = await fetch(irysToHttps(tokenURI as string));
+        if(!metadataResponse.ok) throw new Error("Failed to fetch metadata");
+        const metadata = await metadataResponse.json();
+
+        const typedTerms = terms as [bigint, number, number, string];
         
-        // Extract data from the contract response
-        const metadata = videoMetadata as unknown as {
-          title: string;
-          description: string;
-          creator: string;
-          timestamp: bigint;
-          royaltyVault: string;
-        };
-        
-        // Format the data
         setVideoData({
           id: id as string,
           title: metadata.title,
           description: metadata.description,
-          creator: metadata.creator,
-          timestamp: Number(metadata.timestamp) * 1000, // Convert to JS timestamp
-          videoURI: tokenURI as string,
-          vaultAddress: metadata.royaltyVault,
+          creator: owner as string,
+          timestamp: metadata.timestamp, // Assuming timestamp is in the off-chain metadata
+          videoURI: metadata.videoURI, // Assuming the actual video URI is also in the metadata
+          price: ethers.formatEther(typedTerms[0]),
+          duration: typedTerms[1] / (24 * 60 * 60), // Convert seconds to days
         });
       } catch (err) {
         console.error('Error loading video:', err);
@@ -79,7 +87,7 @@ export default function WatchPage() {
     };
 
     loadData();
-  }, [id, videoMetadata, tokenURI, videoError]);
+  }, [id, terms, tokenURI, owner, termsError, uriError, ownerError]);
 
   if (isLoading) {
     return (
@@ -115,7 +123,8 @@ export default function WatchPage() {
             creator={videoData.creator}
             timestamp={videoData.timestamp}
             videoURI={videoData.videoURI}
-            vaultAddress={videoData.vaultAddress}
+            price={videoData.price}
+            duration={videoData.duration}
           />
         </div>
       </div>
