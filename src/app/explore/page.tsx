@@ -80,12 +80,7 @@ export default function ExplorePage() {
               {filteredVideos.map((video: IIpAsset) => (
                 <VideoCard
                   key={video.id}
-                  id={video.id}
-                  title={video.title}
-                  description={video.description}
-                  creator={video.creator}
-                  timestamp={video.timestamp}
-                  videoURI={video.videoURI}
+                  {...video}
                 />
               ))}
             </div>

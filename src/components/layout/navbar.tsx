@@ -5,6 +5,7 @@ import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useOriginAuth } from '@/components/providers/origin-provider';
+import { useModal } from '@campnetwork/origin/react';
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -14,18 +15,39 @@ const navigation = [
 ];
 
 function ConnectButton() {
-  const { isConnected, address, isLoading, connect, disconnect } = useOriginAuth();
+  const { isConnected, address, disconnect } = useOriginAuth();
+  const { openModal } = useModal();
 
-  if (isLoading) {
-    return (
-      <button
-        disabled
-        className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-gray-400"
-      >
-        Connecting...
-      </button>
-    );
-  }
+  const handleConnect = async () => {
+    try {
+      console.log('🔄 Opening connection modal...');
+      console.log('🔍 Modal state:', { openModal, typeof: typeof openModal });
+      
+      // Check if we're in the browser
+      if (typeof window === 'undefined') {
+        console.warn('⚠️ Attempted to open modal on server side');
+        return;
+      }
+      
+      await openModal();
+      console.log('✅ Modal opened successfully');
+    } catch (error) {
+      console.error('❌ Modal open failed:', error);
+      console.error('Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        type: typeof error,
+        constructor: error?.constructor?.name,
+        error: error
+      });
+      
+      // Log additional error details
+      if (error && typeof error === 'object') {
+        console.error('Additional error info:', JSON.stringify(error, null, 2));
+      }
+    }
+  };
 
   if (isConnected && address) {
     return (
@@ -45,7 +67,7 @@ function ConnectButton() {
 
   return (
     <button
-      onClick={connect}
+      onClick={handleConnect}
       className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
     >
       Connect Wallet

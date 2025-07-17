@@ -1,11 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useAccount } from 'wagmi';
-import { irysToHttps } from '@/services/irys';
+import { useOriginAuth } from '@/components/providers/origin-provider';
 import { useHasAccess, useBuyAccess } from '@/hooks/useIpAsset';
 import { showSuccess, showError, showLoading, dismissToast } from '@/components/ui/ToastProvider';
-import { ethers } from 'ethers';
 
 interface VideoDetailProps {
   id: string;
@@ -28,14 +26,13 @@ export default function VideoDetail({
   price,
   duration
 }: VideoDetailProps) {
-  const { address } = useAccount();
-  const tokenId = BigInt(id);
-  const { hasAccess, isLoading: isAccessLoading } = useHasAccess(tokenId);
-  const { buy, isLoading: isBuyLoading } = useBuyAccess();
+  const { address } = useOriginAuth();
+  const { hasAccess, isLoading: isAccessLoading } = useHasAccess(id);
+  const { buyAccess, isLoading: isBuyLoading } = useBuyAccess();
   
   const [periods, setPeriods] = useState(1);
 
-  const videoUrl = irysToHttps(videoURI);
+  const videoUrl = videoURI; // Use videoURI directly since it might be a URL already
   const isCreator = address?.toLowerCase() === creator.toLowerCase();
   const formattedDate = new Date(timestamp).toLocaleDateString();
   const canWatch = hasAccess || isCreator;
@@ -47,13 +44,10 @@ export default function VideoDetail({
     try {
       toastId = showLoading('Processing your purchase...');
       
-      const result = await buy(tokenId, periods, ethers.parseEther(price));
+      await buyAccess(id, periods);
       
-      if (result.success) {
-        showSuccess('Successfully purchased access!');
-      } else {
-        showError(result.error || 'Failed to purchase access.');
-      }
+      if (toastId) dismissToast(toastId);
+      showSuccess('Successfully purchased access!');
     } catch (err) {
       console.error("Error buying access:", err);
       const errorMsg = err instanceof Error ? err.message : 'Failed to buy access';

@@ -102,7 +102,10 @@ export function useHasAccess(tokenId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const checkAccess = useCallback(async () => {
-    if (!origin || !address || !tokenId) return;
+    if (!origin || !address || !tokenId) {
+      setHasAccess(false);
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -111,6 +114,7 @@ export function useHasAccess(tokenId: string) {
       const access = await originInstance.hasAccess(BigInt(tokenId), address);
       setHasAccess(access);
     } catch (err) {
+      console.error('Error checking access:', err);
       setError(err instanceof Error ? err.message : 'Failed to check access');
       setHasAccess(false);
     } finally {
@@ -138,7 +142,9 @@ export function useMintIpAsset() {
     onProgress?: (percent: number) => void
   ) => {
     if (!origin) {
-      throw new Error('Origin not connected');
+      const errorMessage = 'Origin not connected. Please connect your wallet first.';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     }
 
     setIsLoading(true);
@@ -154,6 +160,7 @@ export function useMintIpAsset() {
       );
       return tokenId;
     } catch (err) {
+      console.error('Error minting asset:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to mint asset';
       setError(errorMessage);
       throw new Error(errorMessage);
