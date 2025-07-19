@@ -121,9 +121,9 @@ export default function DashboardPage() {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                                {createdAssets.map((asset: IIpAsset) => (
+                                {createdAssets.map((asset: IIpAsset, index: number) => (
                                     <VideoCard
-                                        key={asset.id}
+                                        key={asset.id || `asset-${index}`}
                                         {...asset}
                                     />
                                 ))}
@@ -163,8 +163,8 @@ export default function DashboardPage() {
                                  We are passing all assets to the SubscribedAsset component, which will
                                  then individually check for access. This is very inefficient but demonstrates the flow.
                                */}
-                               {subscribedAssets.map((asset: IIpAsset) => (
-                                   <SubscribedAsset key={asset.id} asset={asset} />
+                               {subscribedAssets.map((asset: IIpAsset, index: number) => (
+                                   <SubscribedAsset key={asset.id || `subscribed-${index}`} asset={asset} />
                                ))}
                             </div>
                         )}

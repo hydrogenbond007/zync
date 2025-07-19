@@ -121,8 +121,16 @@ export function OriginProvider({ children, clientId }: OriginProviderProps) {
   console.log('🔧 Origin Provider Config:', {
     clientId: clientId,
     redirectUri: redirectUri,
-    windowAvailable: typeof window !== 'undefined'
+    windowAvailable: typeof window !== 'undefined',
+    timestamp: new Date().toISOString()
   });
+  
+  // Verify we're not accidentally using the old client ID
+  if (clientId === 'wv2h4to5qa') {
+    console.error('❌ OLD CLIENT ID DETECTED! Check .env.local file');
+  } else {
+    console.log('✅ Using correct client ID:', clientId);
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

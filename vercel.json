@@ -5,6 +5,7 @@
   "outputDirectory": ".next",
   "regions": ["sfo1"],
   "env": {
-    "NEXT_PUBLIC_ENABLE_TESTNETS": "true"
+    "NEXT_PUBLIC_ENABLE_TESTNETS": "true",
+    "NEXT_PUBLIC_CAMP_CLIENT_ID": "9123887d-94f0-4427-a2f7-cd04d16c1fc3"
   }
 } 

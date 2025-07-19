@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useOriginAuth } from '@/components/providers/origin-provider';
 import { useHasAccess, useBuyAccess } from '@/hooks/useIpAsset';
 import { showSuccess, showError, showLoading, dismissToast } from '@/components/ui/ToastProvider';
+import { VideoPlayer } from './VideoPlayer';
 
 interface VideoDetailProps {
   id: string;
@@ -27,12 +28,13 @@ export default function VideoDetail({
   duration
 }: VideoDetailProps) {
   const { address } = useOriginAuth();
-  const { hasAccess, isLoading: isAccessLoading } = useHasAccess(id);
+  const { hasAccess } = useHasAccess(id);
   const { buyAccess, isLoading: isBuyLoading } = useBuyAccess();
   
   const [periods, setPeriods] = useState(1);
 
-  const videoUrl = videoURI; // Use videoURI directly since it might be a URL already
+  // Use videoURI directly - Origin SDK should provide proper URLs
+  const videoUrl = videoURI;
   const isCreator = address?.toLowerCase() === creator.toLowerCase();
   const formattedDate = new Date(timestamp).toLocaleDateString();
   const canWatch = hasAccess || isCreator;
@@ -72,23 +74,12 @@ export default function VideoDetail({
       </div>
 
       <div className="border-t border-gray-200">
-        <div className="relative aspect-w-16 aspect-h-9">
-          <video
-            src={canWatch ? videoUrl : ''}
-            controls={!!canWatch}
-            className="w-full h-auto"
-            poster={canWatch ? undefined : "/video-placeholder.jpg"}
-          />
-          {!canWatch && !isAccessLoading && (
-            <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center">
-              <div className="text-center text-white">
-                <h3 className="text-2xl font-bold">Access Required</h3>
-                <p className="mb-4">Purchase access to watch this video.</p>
-                {/* Purchase UI will be rendered below */}
-              </div>
-            </div>
-          )}
-        </div>
+        <VideoPlayer
+          src={videoUrl}
+          title={title}
+          poster="/video-placeholder.svg"
+          canWatch={canWatch}
+        />
 
         <div className="px-4 py-5 sm:p-6">
           <div className="text-sm text-gray-900 whitespace-pre-wrap">

@@ -7,10 +7,10 @@ import { LicenseTerms, IIpAsset } from '@/types';
 
 // Type for Origin instance methods we need
 interface OriginInstance {
-  hasAccess: (tokenId: bigint, userAddress: string) => Promise<boolean>;
+  hasAccess: (userAddress: string, tokenId: bigint) => Promise<boolean>;
   mintFile: (file: File, metadata: Record<string, unknown>, license: LicenseTerms, parentId?: bigint, options?: { progressCallback?: (percent: number) => void }) => Promise<string>;
   buyAccessSmart: (tokenId: bigint, periods: number) => Promise<unknown>;
-  subscriptionExpiry: (tokenId: bigint, userAddress: string) => Promise<bigint>;
+  subscriptionExpiry: (userAddress: string, tokenId: bigint) => Promise<bigint>;
   getData: (tokenId: bigint) => Promise<unknown>;
 }
 
@@ -50,20 +50,28 @@ export function useCreatorIpAssets(creatorAddress?: string) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCreatorAssets = useCallback(async () => {
-    if (!origin || !creatorAddress) return;
+  useEffect(() => {
+    if (!origin || !creatorAddress) {
+      setAssets([]);
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
+    
     try {
       // Get uploads from Origin SDK
       const originUploads = uploads.data || [];
       
       // Transform Origin uploads to our IIpAsset format
-      const transformedAssets: IIpAsset[] = originUploads.map((upload: unknown) => {
+      const transformedAssets: IIpAsset[] = originUploads.map((upload: unknown, index: number) => {
         const uploadData = upload as Record<string, unknown>;
+        // Ensure we always have a unique ID that can be converted to BigInt
+        const baseId = (uploadData.tokenId as string)?.toString() || (uploadData.id as string);
+        const uniqueId = baseId || `${Date.now()}${index.toString().padStart(3, '0')}`;
+        
         return {
-          id: (uploadData.tokenId as string)?.toString() || (uploadData.id as string) || '',
+          id: uniqueId,
           title: ((uploadData.metadata as Record<string, unknown>)?.title as string) || (uploadData.name as string) || 'Untitled',
           description: ((uploadData.metadata as Record<string, unknown>)?.description as string) || '',
           creator: creatorAddress,
@@ -80,6 +88,7 @@ export function useCreatorIpAssets(creatorAddress?: string) {
       });
 
       setAssets(transformedAssets);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch creator assets');
     } finally {
@@ -87,11 +96,12 @@ export function useCreatorIpAssets(creatorAddress?: string) {
     }
   }, [origin, creatorAddress, uploads.data]);
 
-  useEffect(() => {
-    fetchCreatorAssets();
-  }, [fetchCreatorAssets]);
+  const refetchCreatorAssets = useCallback(() => {
+    // Trigger re-fetch by updating a state that's watched by useEffect
+    setIsLoading(true);
+  }, []);
 
-  return { assets, isLoading, error, refetch: fetchCreatorAssets };
+  return { assets, isLoading, error, refetch: refetchCreatorAssets };
 }
 
 // Hook to check if user has access to an IP asset
@@ -107,11 +117,18 @@ export function useHasAccess(tokenId: string) {
       return;
     }
 
+    // Check if tokenId can be converted to BigInt
+    if (!/^\d+$/.test(tokenId)) {
+      console.warn(`Cannot check access for non-numeric token ID: ${tokenId}`);
+      setHasAccess(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
       const originInstance = origin as OriginInstance;
-      const access = await originInstance.hasAccess(BigInt(tokenId), address);
+      const access = await originInstance.hasAccess(address, BigInt(tokenId));
       setHasAccess(access);
     } catch (err) {
       console.error('Error checking access:', err);
@@ -183,6 +200,10 @@ export function useBuyAccess() {
       throw new Error('Origin not connected');
     }
 
+    if (!/^\d+$/.test(tokenId)) {
+      throw new Error(`Invalid token ID: ${tokenId}. Must be numeric.`);
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -212,11 +233,17 @@ export function useSubscriptionExpiry(tokenId: string) {
   const fetchExpiry = useCallback(async () => {
     if (!origin || !address || !tokenId) return;
 
+    if (!/^\d+$/.test(tokenId)) {
+      console.warn(`Cannot fetch expiry for non-numeric token ID: ${tokenId}`);
+      setExpiry(null);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
       const originInstance = origin as OriginInstance;
-      const expiryTimestamp = await originInstance.subscriptionExpiry(BigInt(tokenId), address);
+      const expiryTimestamp = await originInstance.subscriptionExpiry(address, BigInt(tokenId));
       setExpiry(expiryTimestamp ? new Date(Number(expiryTimestamp) * 1000) : null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch expiry');
@@ -233,33 +260,70 @@ export function useSubscriptionExpiry(tokenId: string) {
   return { expiry, isLoading, error, refetch: fetchExpiry };
 }
 
-// Hook to get asset data
+// Hook to get asset data with fallback to uploads list
 export function useAssetData(tokenId: string) {
   const { origin } = useOriginAuth();
+  const { uploads } = useOrigin();
   const [data, setData] = useState<unknown>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
-    if (!origin || !tokenId) return;
+  useEffect(() => {
+    if (!origin || !tokenId) {
+      setData(null);
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
-    try {
-      const originInstance = origin as OriginInstance;
-      const assetData = await originInstance.getData(BigInt(tokenId));
-      setData(assetData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch asset data');
-      setData(null);
-    } finally {
+
+    // First, try to find the asset in the uploads list (this works for all videos)
+    const originUploads = uploads.data || [];
+    const foundUpload = originUploads.find((upload: unknown) => {
+      const uploadData = upload as Record<string, unknown>;
+      const uploadId = (uploadData.tokenId as string)?.toString() || (uploadData.id as string);
+      return uploadId === tokenId;
+    });
+
+    if (foundUpload) {
+      console.log('📁 Found asset in uploads list:', foundUpload);
+      setData(foundUpload);
       setIsLoading(false);
+      return;
     }
-  }, [origin, tokenId]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    // If not found in uploads and tokenId is numeric, try the Origin SDK getData method
+    if (!/^\d+$/.test(tokenId)) {
+      console.warn(`Cannot fetch data for non-numeric token ID: ${tokenId}`);
+      setError(`Invalid token ID format: ${tokenId}`);
+      setData(null);
+      setIsLoading(false);
+      return;
+    }
 
-  return { data, isLoading, error, refetch: fetchData };
+    // Fallback to Origin SDK getData method
+    const fetchFromOrigin = async () => {
+      try {
+        const originInstance = origin as OriginInstance;
+        const assetData = await originInstance.getData(BigInt(tokenId));
+        console.log('🔗 Fetched asset from Origin SDK:', assetData);
+        setData(assetData);
+        setError(null);
+      } catch (err) {
+        console.error('❌ Failed to fetch from Origin SDK:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch asset data');
+        setData(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFromOrigin();
+  }, [origin, tokenId, uploads.data]);
+
+  const refetchData = useCallback(() => {
+    setIsLoading(true);
+  }, []);
+
+  return { data, isLoading, error, refetch: refetchData };
 } 

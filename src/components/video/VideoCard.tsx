@@ -21,7 +21,15 @@ export default function VideoCard(asset: IIpAsset) {
   const formattedDate = new Date(createdAt).toLocaleDateString();
   
   // For now, use tokenURI as thumbnail URL (in a real app, you'd parse the metadata)
-  const thumbnailUrl = tokenURI || '/video-placeholder.jpg';
+  const thumbnailUrl = tokenURI || '/video-placeholder.svg';
+  
+  // Better title handling
+  const displayTitle = title || `Video ${id}`;
+  
+  // Handle missing or invalid creator address
+  const displayCreator = creator && creator.length > 10 
+    ? `${creator.slice(0, 6)}...${creator.slice(-4)}`
+    : 'Unknown Creator';
   
   return (
     <Link href={`/watch/${id}`} className="group">
@@ -37,7 +45,7 @@ export default function VideoCard(asset: IIpAsset) {
             onError={(e) => {
               // Fallback if the video thumbnail fails to load
               const target = e.target as HTMLImageElement;
-              target.src = '/video-placeholder.jpg';
+              target.src = '/video-placeholder.svg';
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -48,9 +56,9 @@ export default function VideoCard(asset: IIpAsset) {
         </div>
         
         <div className="p-4">
-          <h3 className="text-lg font-medium text-gray-900 truncate">{title}</h3>
+          <h3 className="text-lg font-medium text-gray-900 truncate">{displayTitle}</h3>
           <p className="mt-1 text-xs text-gray-500">
-            {creator.slice(0, 6)}...{creator.slice(-4)} • {formattedDate}
+            {displayCreator} • {formattedDate}
           </p>
           <p className="mt-2 text-sm text-gray-600 line-clamp-2">
             {truncatedDescription}
