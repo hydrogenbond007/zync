@@ -111,7 +111,7 @@ export default function WatchPage() {
     creator: (assetRecord?.creator as string) || 'Unknown',
     videoURI: videoURI,
     timestamp: Date.now(), // Current timestamp as fallback
-    price: '0.01', // This would come from license terms
+    price: '0.01', // This would come from license terms (in CAMP)
     duration: 30, // This would come from license terms
     hasAccess: hasAccess
   };

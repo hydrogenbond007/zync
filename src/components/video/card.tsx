@@ -70,7 +70,7 @@ export function VideoCard({
             <span className="text-sm text-gray-500">{views} views</span>
             <span className="mx-2 text-gray-500">•</span>
             <span className="text-sm font-medium text-indigo-600">
-              {formatEther(tokenPrice)} ETH per {tokenSymbol}
+              {formatEther(tokenPrice)} WCAMP per {tokenSymbol}
             </span>
           </div>
         </div>

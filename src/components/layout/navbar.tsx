@@ -10,6 +10,7 @@ import { useModal } from '@campnetwork/origin/react';
 const navigation = [
   { name: 'Home', href: '/' },
   { name: 'Explore', href: '/explore' },
+  { name: 'Leaderboard', href: '/leaderboard' },
   { name: 'Upload', href: '/upload' },
   { name: 'My Content', href: '/dashboard' },
 ];
