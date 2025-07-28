@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useOriginAuth } from '@/components/providers/origin-provider';
 import { useModal } from '@campnetwork/origin/react';
+import { LogoText } from '../ui/Logo';
 
 const navigation = [
   { name: 'Home', href: '/' },
@@ -87,8 +88,8 @@ export function Navbar() {
             <div className="flex h-16 justify-between">
               <div className="flex">
                 <div className="flex flex-shrink-0 items-center">
-                  <Link href="/" className="text-white font-bold text-xl">
-                    Zync
+                  <Link href="/" className="text-white">
+                    <LogoText />
                   </Link>
                 </div>
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">

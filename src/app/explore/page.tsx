@@ -21,28 +21,30 @@ export default function ExplorePage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-black py-12">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center justify-center">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            Explore Content
-          </h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Discover videos and invest in their IP
-          </p>
+          <div className="text-center mb-12">
+            <div className="inline-block p-4 border-2 border-cyan-400 rounded-lg mb-6">
+              <MagnifyingGlassIcon className="h-12 w-12 text-cyan-400" />
+            </div>
+            <h1 className="text-5xl font-bold tracking-tight text-white font-mono">
+              EXPLORE CONTENT
+            </h1>
+            <p className="mt-4 text-lg text-gray-400">
+              Discover videos • Invest in IP • Build your portfolio
+            </p>
+          </div>
 
           {/* Search Bar */}
-          <div className="mt-8 w-full max-w-lg">
+          <div className="w-full max-w-2xl mb-12">
             <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <MagnifyingGlassIcon
-                  className="h-5 w-5 text-gray-400"
-                  aria-hidden="true"
-                />
+              <div className="absolute inset-y-0 left-0 flex items-center pl-4">
+                <MagnifyingGlassIcon className="h-5 w-5 text-cyan-400" />
               </div>
               <input
                 type="text"
-                className="block w-full rounded-md border-0 py-1.5 pl-10 pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                className="block w-full rounded-lg bg-gray-900 border border-gray-600 py-4 pl-12 pr-4 text-white font-mono placeholder-gray-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
                 placeholder="Search videos..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -52,37 +54,48 @@ export default function ExplorePage() {
 
           {/* Loading state */}
           {isLoading && (
-            <div className="mt-12 text-center">
-              <p className="text-gray-600">Loading videos...</p>
+            <div className="text-center">
+              <div className="inline-block p-6 border-2 border-cyan-400 rounded-lg animate-pulse">
+                <div className="w-8 h-8 bg-cyan-400 rounded"></div>
+              </div>
+              <p className="mt-4 text-gray-400 font-mono">LOADING VIDEOS...</p>
             </div>
           )}
 
           {/* Error state */}
           {error && (
-            <div className="mt-12 text-center">
-              <p className="text-red-600">{error}</p>
+            <div className="text-center">
+              <div className="inline-block p-6 border-2 border-red-500 rounded-lg">
+                <div className="w-8 h-8 bg-red-500 rounded"></div>
+              </div>
+              <p className="mt-4 text-red-400 font-mono">ERROR: {error}</p>
             </div>
           )}
 
           {/* No videos state */}
           {!isLoading && !error && videos.length === 0 && (
-            <div className="mt-12 text-center">
-              <p className="text-gray-600">No videos available yet.</p>
-              <Link href="/upload" className="mt-4 inline-block text-indigo-600 hover:text-indigo-500">
-                Be the first to create content!
+            <div className="text-center">
+              <div className="inline-block p-8 border-2 border-gray-600 rounded-lg mb-6">
+                <div className="w-12 h-12 bg-gray-600 rounded mx-auto"></div>
+              </div>
+              <p className="text-gray-400 font-mono mb-4">NO VIDEOS AVAILABLE YET</p>
+              <Link href="/upload" className="text-cyan-400 hover:text-cyan-300 font-mono transition-colors">
+                → BE THE FIRST TO CREATE CONTENT
               </Link>
             </div>
           )}
 
           {/* Video Grid */}
           {!isLoading && !error && filteredVideos.length > 0 && (
-            <div className="mt-12 grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredVideos.map((video: IIpAsset) => (
-                <VideoCard
-                  key={video.id}
-                  {...video}
-                />
-              ))}
+            <div className="w-full">
+              <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {filteredVideos.map((video: IIpAsset) => (
+                  <VideoCard
+                    key={video.id}
+                    {...video}
+                  />
+                ))}
+              </div>
             </div>
           )}
         </div>
